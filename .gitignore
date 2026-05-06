@@ -3,6 +3,25 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Production
+build/
+
+# Local environment
+.env*.local
+
+# Vercel
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+
 # User-specific files
 *.rsuser
 *.suo
