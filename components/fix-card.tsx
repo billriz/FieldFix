@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export type FixCardData = {
   id: string;
   title: string;
@@ -13,7 +15,10 @@ type FixCardProps = {
 
 export function FixCard({ fix }: FixCardProps) {
   return (
-    <article className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+    <Link
+      href={`/fix/${fix.id}`}
+      className="block rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow"
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
@@ -31,6 +36,6 @@ export function FixCard({ fix }: FixCardProps) {
         </div>
         <p className="text-sm font-medium text-slate-500 sm:pt-1">{fix.updatedAt}</p>
       </div>
-    </article>
+    </Link>
   );
 }
