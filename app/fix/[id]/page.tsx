@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { FixFeedback } from "@/components/fix-feedback";
 import { createClient } from "@/utils/supabase/server";
 
 type FixDetailRow = {
@@ -13,6 +14,8 @@ type FixDetailRow = {
   symptoms: string | null;
   fix_steps: string[] | null;
   parts_used: string[] | null;
+  failure_count: number | null;
+  success_count: number | null;
 };
 
 type FixDetailPageProps = {
@@ -52,7 +55,7 @@ export default async function FixDetailPage({ params }: FixDetailPageProps) {
   const { data, error } = await supabase
     .from("fixes")
     .select(
-      "id,title,description,machine_type,manufacturer,model,symptoms,fix_steps,parts_used",
+      "id,title,description,machine_type,manufacturer,model,symptoms,fix_steps,parts_used,success_count,failure_count",
     )
     .eq("id", id)
     .eq("approved", true)
@@ -135,6 +138,12 @@ export default async function FixDetailPage({ params }: FixDetailPageProps) {
           <p className="mt-3 text-sm leading-6 text-slate-600">No parts recorded.</p>
         )}
       </section>
+
+      <FixFeedback
+        fixId={fix.id}
+        initialFailureCount={fix.failure_count ?? 0}
+        initialSuccessCount={fix.success_count ?? 0}
+      />
     </article>
   );
 }
