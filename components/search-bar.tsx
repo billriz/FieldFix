@@ -1,10 +1,16 @@
 type SearchBarProps = {
   placeholder?: string;
+  value: string;
+  onChange: (value: string) => void;
 };
 
-export function SearchBar({ placeholder = "Search fixes, error codes, or equipment" }: SearchBarProps) {
+export function SearchBar({
+  placeholder = "Search fixes, error codes, or equipment",
+  value,
+  onChange,
+}: SearchBarProps) {
   return (
-    <form role="search" className="w-full">
+    <form role="search" className="w-full" onSubmit={(event) => event.preventDefault()}>
       <label htmlFor="fix-search" className="sr-only">
         Search fixes
       </label>
@@ -16,6 +22,8 @@ export function SearchBar({ placeholder = "Search fixes, error codes, or equipme
           id="fix-search"
           name="q"
           type="search"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           className="min-h-12 w-full bg-transparent text-base text-slate-950 outline-none placeholder:text-slate-500"
         />
