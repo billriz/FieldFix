@@ -1,139 +1,129 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { FileCard, type FileCardData } from "@/components/file-card";
 import { FolderRow, type FolderRowData } from "@/components/folder-row";
 import { SearchBar } from "@/components/search-bar";
+import { createClient } from "@/utils/supabase/client";
 
-const machineTypes = ["All machines", "ATM", "TCR", "Drive-Up", "Cameras"];
-const categories = ["All categories", "Manuals", "Diagrams", "Forms", "Firmware"];
+const allMachinesLabel = "All machines";
+const allCategoriesLabel = "All categories";
+const allFolderId = "all";
+const defaultMachineTypes = ["ATM", "TCR", "Drive-Up", "Cameras"];
+const defaultCategories = ["Manuals", "Diagrams", "Forms", "Firmware"];
 
-const folders: FolderRowData[] = [
-  {
-    id: "all",
-    name: "All field files",
-    machineType: "Mixed",
-    category: "Library",
-    fileCount: 8,
-    updatedAt: "Today",
-  },
-  {
-    id: "atm-service",
-    name: "ATM service",
-    machineType: "ATM",
-    category: "Manuals",
-    fileCount: 3,
-    updatedAt: "May 7",
-  },
-  {
-    id: "tcr-calibration",
-    name: "TCR calibration",
-    machineType: "TCR",
-    category: "Diagrams",
-    fileCount: 2,
-    updatedAt: "May 5",
-  },
-  {
-    id: "branch-security",
-    name: "Branch security",
-    machineType: "Cameras",
-    category: "Forms",
-    fileCount: 3,
-    updatedAt: "May 3",
-  },
-];
+type FileRow = {
+  id: string;
+  filename: string;
+  name: string | null;
+  description: string | null;
+  machine_type: string | null;
+  category: string | null;
+  content_type: string | null;
+  size_bytes: number | null;
+  tags: string[] | null;
+  updated_at: string;
+};
 
-const files: Array<FileCardData & { folderId: string }> = [
-  {
-    id: "file-001",
-    folderId: "atm-service",
-    name: "NCR 6634 dispenser recovery checklist.pdf",
-    description: "Step-by-step field checklist for safe dispenser recovery after presenter jams.",
-    machineType: "ATM",
-    category: "Manuals",
-    fileType: "PDF",
-    size: "1.8 MB",
-    updatedAt: "Updated May 7",
-  },
-  {
-    id: "file-002",
-    folderId: "atm-service",
-    name: "Hyosung MX5200 receipt printer quick guide.pdf",
-    description: "Common receipt printer symptoms, reset sequence, and part verification notes.",
-    machineType: "ATM",
-    category: "Manuals",
-    fileType: "PDF",
-    size: "940 KB",
-    updatedAt: "Updated May 6",
-  },
-  {
-    id: "file-003",
-    folderId: "atm-service",
-    name: "ATM cash cassette inspection form.xlsx",
-    description: "Reusable inspection form for cassette fit, latch condition, and denomination setup.",
-    machineType: "ATM",
-    category: "Forms",
-    fileType: "XLSX",
-    size: "320 KB",
-    updatedAt: "Updated May 2",
-  },
-  {
-    id: "file-004",
-    folderId: "tcr-calibration",
-    name: "Glory RBG-100 sensor map.png",
-    description: "Annotated sensor map for transport faults and reject path troubleshooting.",
-    machineType: "TCR",
-    category: "Diagrams",
-    fileType: "PNG",
-    size: "2.3 MB",
-    updatedAt: "Updated May 5",
-  },
-  {
-    id: "file-005",
-    folderId: "tcr-calibration",
-    name: "TCR calibration sign-off.pdf",
-    description: "Branch sign-off packet for calibration completion and variance notes.",
-    machineType: "TCR",
-    category: "Forms",
-    fileType: "PDF",
-    size: "680 KB",
-    updatedAt: "Updated May 4",
-  },
-  {
-    id: "file-006",
-    folderId: "branch-security",
-    name: "Drive-up camera alignment reference.jpg",
-    description: "Reference captures for field of view, glare checks, and lane coverage.",
-    machineType: "Drive-Up",
-    category: "Diagrams",
-    fileType: "JPG",
-    size: "4.1 MB",
-    updatedAt: "Updated May 3",
-  },
-  {
-    id: "file-007",
-    folderId: "branch-security",
-    name: "DVR firmware release notes.txt",
-    description: "Current branch DVR firmware notes, known issues, and rollback guidance.",
-    machineType: "Cameras",
-    category: "Firmware",
-    fileType: "TXT",
-    size: "84 KB",
-    updatedAt: "Updated Apr 29",
-  },
-  {
-    id: "file-008",
-    folderId: "branch-security",
-    name: "Alarm panel service authorization.pdf",
-    description: "Authorization form for service windows, testing contacts, and monitoring bypass.",
-    machineType: "Cameras",
-    category: "Forms",
-    fileType: "PDF",
-    size: "510 KB",
-    updatedAt: "Updated Apr 28",
-  },
-];
+type ExplorerFile = FileCardData & {
+  folderId: string;
+  searchText: string;
+  updatedAtValue: number;
+  folderUpdatedAt: string;
+};
+
+function normalizeSearchTerm(value: string) {
+  return value.trim().replace(/[(),]/g, " ").replace(/\s+/g, " ").toLowerCase().slice(0, 80);
+}
+
+function formatFileType(row: FileRow) {
+  const extension = row.filename.split(".").pop();
+
+  if (extension && extension !== row.filename) {
+    return extension.toUpperCase();
+  }
+
+  if (row.content_type) {
+    return row.content_type.split("/").pop()?.toUpperCase() ?? "FILE";
+  }
+
+  return "FILE";
+}
+
+function formatSize(sizeBytes: number | null) {
+  if (!sizeBytes) {
+    return "Unknown size";
+  }
+
+  const units = ["B", "KB", "MB", "GB"];
+  let size = sizeBytes;
+  let unitIndex = 0;
+
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+
+  const formatter = new Intl.NumberFormat("en", {
+    maximumFractionDigits: unitIndex === 0 ? 0 : 1,
+  });
+
+  return `${formatter.format(size)} ${units[unitIndex]}`;
+}
+
+function formatUpdatedAt(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Updated recently";
+  }
+
+  return `Updated ${new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+  }).format(date)}`;
+}
+
+function formatFolderDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Recent";
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+function toFolderId(machineType: string, category: string) {
+  return `${machineType}__${category}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+function toExplorerFile(row: FileRow): ExplorerFile {
+  const name = row.name?.trim() || row.filename;
+  const machineType = row.machine_type?.trim() || "Unspecified";
+  const category = row.category?.trim() || "Uncategorized";
+  const tags = row.tags?.filter(Boolean) ?? [];
+
+  return {
+    id: row.id,
+    folderId: toFolderId(machineType, category),
+    name,
+    description: row.description?.trim() || "No description provided.",
+    machineType,
+    category,
+    fileType: formatFileType(row),
+    size: formatSize(row.size_bytes),
+    updatedAt: formatUpdatedAt(row.updated_at),
+    updatedAtValue: new Date(row.updated_at).getTime(),
+    folderUpdatedAt: formatFolderDate(row.updated_at),
+    tags,
+    searchText: [name, ...tags].join(" ").toLowerCase(),
+  };
+}
 
 function Chip({
   label,
@@ -163,27 +153,149 @@ function Chip({
 
 export function FileExplorer() {
   const [query, setQuery] = useState("");
-  const [activeMachine, setActiveMachine] = useState(machineTypes[0]);
-  const [activeCategory, setActiveCategory] = useState(categories[0]);
-  const [activeFolderId, setActiveFolderId] = useState("all");
+  const [activeMachine, setActiveMachine] = useState(allMachinesLabel);
+  const [activeCategory, setActiveCategory] = useState(allCategoriesLabel);
+  const [activeFolderId, setActiveFolderId] = useState(allFolderId);
+  const [files, setFiles] = useState<ExplorerFile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const searchTerm = useMemo(() => normalizeSearchTerm(query), [query]);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    async function fetchFiles() {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      const supabase = createClient();
+      let request = supabase
+        .from("files")
+        .select(
+          "id,filename,name,description,machine_type,category,content_type,size_bytes,tags,updated_at",
+        )
+        .order("updated_at", { ascending: false });
+
+      if (activeMachine !== allMachinesLabel) {
+        request = request.eq("machine_type", activeMachine);
+      }
+
+      if (activeCategory !== allCategoriesLabel) {
+        request = request.eq("category", activeCategory);
+      }
+
+      const { data, error } = await request;
+
+      if (!isCurrent) {
+        return;
+      }
+
+      if (error) {
+        setFiles([]);
+        setErrorMessage("Files could not be loaded. Please try again.");
+      } else {
+        setFiles((data ?? []).map((row) => toExplorerFile(row as FileRow)));
+      }
+
+      setIsLoading(false);
+    }
+
+    fetchFiles();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [activeCategory, activeMachine]);
+
+  const machineTypes = useMemo(
+    () => [
+      allMachinesLabel,
+      ...Array.from(new Set([...defaultMachineTypes, ...files.map((file) => file.machineType)])).sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    ],
+    [files],
+  );
+
+  const categories = useMemo(
+    () => [
+      allCategoriesLabel,
+      ...Array.from(new Set([...defaultCategories, ...files.map((file) => file.category)])).sort((a, b) =>
+        a.localeCompare(b),
+      ),
+    ],
+    [files],
+  );
+
+  const folders = useMemo<FolderRowData[]>(() => {
+    const groupedFiles = new Map<
+      string,
+      {
+        folder: FolderRowData;
+        updatedAtValue: number;
+      }
+    >();
+
+    for (const file of files) {
+      const existing = groupedFiles.get(file.folderId);
+
+      if (existing) {
+        existing.folder.fileCount += 1;
+
+        if (!Number.isNaN(file.updatedAtValue) && file.updatedAtValue > existing.updatedAtValue) {
+          existing.updatedAtValue = file.updatedAtValue;
+          existing.folder.updatedAt = file.folderUpdatedAt;
+        }
+
+        continue;
+      }
+
+      groupedFiles.set(file.folderId, {
+        folder: {
+          id: file.folderId,
+          name: `${file.machineType} ${file.category}`.trim(),
+          machineType: file.machineType,
+          category: file.category,
+          fileCount: 1,
+          updatedAt: file.folderUpdatedAt,
+        },
+        updatedAtValue: Number.isNaN(file.updatedAtValue) ? 0 : file.updatedAtValue,
+      });
+    }
+
+    return [
+      {
+        id: allFolderId,
+        name: "All field files",
+        machineType: "Mixed",
+        category: "Library",
+        fileCount: files.length,
+        updatedAt: files[0]?.folderUpdatedAt ?? "Recent",
+      },
+      ...Array.from(groupedFiles.values())
+        .sort((a, b) => a.folder.name.localeCompare(b.folder.name))
+        .map(({ folder }) => folder),
+    ];
+  }, [files]);
 
   const visibleFiles = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
     return files.filter((file) => {
-      const matchesFolder = activeFolderId === "all" || file.folderId === activeFolderId;
-      const matchesMachine = activeMachine === "All machines" || file.machineType === activeMachine;
-      const matchesCategory = activeCategory === "All categories" || file.category === activeCategory;
-      const matchesQuery =
-        !normalizedQuery ||
-        [file.name, file.description, file.machineType, file.category, file.fileType]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery);
+      const matchesFolder = activeFolderId === allFolderId || file.folderId === activeFolderId;
+      const matchesQuery = !searchTerm || file.searchText.includes(searchTerm);
 
-      return matchesFolder && matchesMachine && matchesCategory && matchesQuery;
+      return matchesFolder && matchesQuery;
     });
-  }, [activeCategory, activeFolderId, activeMachine, query]);
+  }, [activeFolderId, files, searchTerm]);
+
+  function selectMachine(machineType: string) {
+    setActiveMachine(machineType);
+    setActiveFolderId(allFolderId);
+  }
+
+  function selectCategory(category: string) {
+    setActiveCategory(category);
+    setActiveFolderId(allFolderId);
+  }
 
   return (
     <section className="space-y-6">
@@ -201,9 +313,11 @@ export function FileExplorer() {
         <SearchBar
           value={query}
           onChange={setQuery}
-          placeholder="Search files, folders, machine types, or categories"
+          placeholder="Search file names or tags"
         />
       </div>
+
+      {errorMessage ? <p className="text-sm font-medium text-red-700">{errorMessage}</p> : null}
 
       <div className="space-y-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
         <div className="space-y-2">
@@ -216,7 +330,7 @@ export function FileExplorer() {
                 key={machineType}
                 label={machineType}
                 isActive={machineType === activeMachine}
-                onClick={() => setActiveMachine(machineType)}
+                onClick={() => selectMachine(machineType)}
               />
             ))}
           </div>
@@ -230,7 +344,7 @@ export function FileExplorer() {
                 key={category}
                 label={category}
                 isActive={category === activeCategory}
-                onClick={() => setActiveCategory(category)}
+                onClick={() => selectCategory(category)}
               />
             ))}
           </div>
@@ -265,7 +379,11 @@ export function FileExplorer() {
             </p>
           </div>
 
-          {visibleFiles.length > 0 ? (
+          {isLoading ? (
+            <div className="rounded-md border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+              Loading files...
+            </div>
+          ) : visibleFiles.length > 0 ? (
             <div className="space-y-3">
               {visibleFiles.map((file) => (
                 <FileCard key={file.id} file={file} />

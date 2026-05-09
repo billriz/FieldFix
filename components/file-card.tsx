@@ -7,6 +7,7 @@ export type FileCardData = {
   fileType: string;
   size: string;
   updatedAt: string;
+  tags?: string[];
 };
 
 type FileCardProps = {
@@ -34,6 +35,19 @@ export function FileCard({ file }: FileCardProps) {
             <h2 className="truncate text-lg font-semibold text-slate-950">{file.name}</h2>
             <p className="text-sm leading-6 text-slate-600">{file.description}</p>
           </div>
+
+          {file.tags && file.tags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {file.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-6 text-sm text-slate-500 sm:block sm:space-y-2 sm:text-right">
