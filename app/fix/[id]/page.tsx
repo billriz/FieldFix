@@ -1,8 +1,27 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { FileCard, type FileCardData } from "@/components/file-card";
 import { FixFeedback } from "@/components/fix-feedback";
 import { createClient } from "@/utils/supabase/server";
+
+type LinkedFile = {
+  id: string;
+  filename: string;
+  name: string | null;
+  description: string | null;
+  machine_type: string | null;
+  category: string | null;
+  content_type: string | null;
+  size_bytes: number | null;
+  tags: string[] | null;
+  updated_at: string;
+};
+
+type LinkedFileRow = {
+  role: string | null;
+  files: LinkedFile | LinkedFile[] | null;
+};
 
 type FixDetailRow = {
   id: string;
@@ -16,6 +35,7 @@ type FixDetailRow = {
   parts_used: string[] | null;
   failure_count: number | null;
   success_count: number | null;
+  fix_files: LinkedFileRow[] | null;
 };
 
 type FixDetailPageProps = {
@@ -40,6 +60,72 @@ function inferSteps(description: string | null) {
     .filter(Boolean);
 }
 
+function formatFileType(file: LinkedFile) {
+  const extension = file.filename.split(".").pop();
+
+  if (extension && extension !== file.filename) {
+    return extension.toUpperCase();
+  }
+
+  if (file.content_type) {
+    return file.content_type.split("/").pop()?.toUpperCase() ?? "FILE";
+  }
+
+  return "FILE";
+}
+
+function formatFileSize(sizeBytes: number | null) {
+  if (!sizeBytes) {
+    return "Unknown size";
+  }
+
+  const units = ["B", "KB", "MB", "GB"];
+  let size = sizeBytes;
+  let unitIndex = 0;
+
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${new Intl.NumberFormat("en", {
+    maximumFractionDigits: unitIndex === 0 ? 0 : 1,
+  }).format(size)} ${units[unitIndex]}`;
+}
+
+function formatUpdatedAt(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Updated recently";
+  }
+
+  return `Updated ${new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+  }).format(date)}`;
+}
+
+function toFileCard(row: LinkedFileRow): FileCardData | null {
+  const file = Array.isArray(row.files) ? row.files[0] : row.files;
+
+  if (!file) {
+    return null;
+  }
+
+  return {
+    id: file.id,
+    name: file.name?.trim() || file.filename,
+    description: file.description?.trim() || "No description provided.",
+    machineType: file.machine_type ?? "Unspecified",
+    category: file.category ?? "Uncategorized",
+    fileType: formatFileType(file),
+    size: formatFileSize(file.size_bytes),
+    updatedAt: formatUpdatedAt(file.updated_at),
+    tags: file.tags?.filter(Boolean) ?? [],
+  };
+}
+
 function DetailField({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
@@ -55,7 +141,34 @@ export default async function FixDetailPage({ params }: FixDetailPageProps) {
   const { data, error } = await supabase
     .from("fixes")
     .select(
-      "id,title,description,machine_type,manufacturer,model,symptoms,fix_steps,parts_used,success_count,failure_count",
+      `
+        id,
+        title,
+        description,
+        machine_type,
+        manufacturer,
+        model,
+        symptoms,
+        fix_steps,
+        parts_used,
+        success_count,
+        failure_count,
+        fix_files (
+          role,
+          files (
+            id,
+            filename,
+            name,
+            description,
+            machine_type,
+            category,
+            content_type,
+            size_bytes,
+            tags,
+            updated_at
+          )
+        )
+      `,
     )
     .eq("id", id)
     .eq("approved", true)
@@ -65,10 +178,13 @@ export default async function FixDetailPage({ params }: FixDetailPageProps) {
     notFound();
   }
 
-  const fix = data as FixDetailRow;
+  const fix = data as unknown as FixDetailRow;
   const steps = cleanList(fix.fix_steps);
   const readableSteps = steps.length > 0 ? steps : inferSteps(fix.description);
   const parts = cleanList(fix.parts_used);
+  const relatedFiles = (fix.fix_files ?? [])
+    .map((row) => toFileCard(row))
+    .filter((file): file is FileCardData => Boolean(file));
 
   return (
     <article className="space-y-6">
@@ -136,6 +252,25 @@ export default async function FixDetailPage({ params }: FixDetailPageProps) {
           </ul>
         ) : (
           <p className="mt-3 text-sm leading-6 text-slate-600">No parts recorded.</p>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-base font-semibold text-slate-950">Related Files</h2>
+          <p className="text-sm text-slate-500">{relatedFiles.length} files</p>
+        </div>
+
+        {relatedFiles.length > 0 ? (
+          <div className="space-y-3">
+            {relatedFiles.map((file) => (
+              <FileCard key={file.id} file={file} />
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-md border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+            No files are linked to this fix yet.
+          </p>
         )}
       </section>
 
