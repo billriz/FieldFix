@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export type FileCardData = {
   id: string;
   name: string;
@@ -16,7 +18,10 @@ type FileCardProps = {
 
 export function FileCard({ file }: FileCardProps) {
   return (
-    <article className="rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow">
+    <Link
+      href={`/files/${file.id}`}
+      className="block rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow"
+    >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap gap-2">
@@ -55,6 +60,6 @@ export function FileCard({ file }: FileCardProps) {
           <p>{file.updatedAt}</p>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
