@@ -10,6 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 const allMachinesLabel = "All machines";
 const allCategoriesLabel = "All categories";
 const allFolderId = "all";
+const uploadBucket = "technician-files";
 const defaultMachineTypes = ["ATM", "TCR", "Drive-Up", "Cameras"];
 const defaultCategories = ["Manuals", "Diagrams", "Forms", "Firmware"];
 
@@ -19,6 +20,7 @@ type FileRow = {
   name: string | null;
   description: string | null;
   machine_type: string | null;
+  model: string | null;
   category: string | null;
   content_type: string | null;
   size_bytes: number | null;
@@ -105,6 +107,7 @@ function toFolderId(machineType: string, category: string) {
 function toExplorerFile(row: FileRow): ExplorerFile {
   const name = row.name?.trim() || row.filename;
   const machineType = row.machine_type?.trim() || "Unspecified";
+  const model = row.model?.trim();
   const category = row.category?.trim() || "Uncategorized";
   const tags = row.tags?.filter(Boolean) ?? [];
 
@@ -114,6 +117,7 @@ function toExplorerFile(row: FileRow): ExplorerFile {
     name,
     description: row.description?.trim() || "No description provided.",
     machineType,
+    model,
     category,
     fileType: formatFileType(row),
     size: formatSize(row.size_bytes),
@@ -121,8 +125,26 @@ function toExplorerFile(row: FileRow): ExplorerFile {
     updatedAtValue: new Date(row.updated_at).getTime(),
     folderUpdatedAt: formatFolderDate(row.updated_at),
     tags,
-    searchText: [name, ...tags].join(" ").toLowerCase(),
+    searchText: [name, machineType, model, category, ...tags].filter(Boolean).join(" ").toLowerCase(),
   };
+}
+
+function cleanText(value: FormDataEntryValue | null) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function cleanPathPart(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+function cleanFilename(value: string) {
+  const cleaned = value.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+  return cleaned || "technician-file";
 }
 
 function Chip({
@@ -159,6 +181,10 @@ export function FileExplorer() {
   const [files, setFiles] = useState<ExplorerFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [uploadErrorMessage, setUploadErrorMessage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const searchTerm = useMemo(() => normalizeSearchTerm(query), [query]);
 
   useEffect(() => {
@@ -172,7 +198,7 @@ export function FileExplorer() {
       let request = supabase
         .from("files")
         .select(
-          "id,filename,name,description,machine_type,category,content_type,size_bytes,tags,updated_at",
+          "id,filename,name,description,machine_type,model,category,content_type,size_bytes,tags,updated_at",
         )
         .order("updated_at", { ascending: false });
 
@@ -205,7 +231,7 @@ export function FileExplorer() {
     return () => {
       isCurrent = false;
     };
-  }, [activeCategory, activeMachine]);
+  }, [activeCategory, activeMachine, refreshKey]);
 
   const machineTypes = useMemo(
     () => [
@@ -297,6 +323,81 @@ export function FileExplorer() {
     setActiveFolderId(allFolderId);
   }
 
+  async function uploadFile(formData: FormData) {
+    setIsUploading(true);
+    setUploadMessage(null);
+    setUploadErrorMessage(null);
+
+    const file = formData.get("file");
+    const machineType = cleanText(formData.get("machine_type"));
+    const model = cleanText(formData.get("model"));
+    const category = cleanText(formData.get("category"));
+    const description = cleanText(formData.get("description"));
+
+    if (!(file instanceof File) || file.size === 0) {
+      setUploadErrorMessage("Choose a file to upload.");
+      setIsUploading(false);
+      return;
+    }
+
+    if (!machineType || !model || !category) {
+      setUploadErrorMessage("Machine type, model, and category are required.");
+      setIsUploading(false);
+      return;
+    }
+
+    const supabase = createClient();
+    const storagePath = [
+      cleanPathPart(machineType),
+      cleanPathPart(model),
+      cleanPathPart(category),
+      `${crypto.randomUUID()}-${cleanFilename(file.name)}`,
+    ]
+      .filter(Boolean)
+      .join("/");
+
+    const { error: uploadError } = await supabase.storage.from(uploadBucket).upload(storagePath, file, {
+      contentType: file.type || undefined,
+      upsert: false,
+    });
+
+    if (uploadError) {
+      setUploadErrorMessage(uploadError.message || "File could not be uploaded.");
+      setIsUploading(false);
+      return;
+    }
+
+    const fileUrl = supabase.storage.from(uploadBucket).getPublicUrl(storagePath).data.publicUrl;
+    const { error: insertError } = await supabase.from("files").insert({
+      bucket: uploadBucket,
+      path: storagePath,
+      filename: file.name,
+      name: file.name,
+      description: description || null,
+      machine_type: machineType,
+      model,
+      category,
+      content_type: file.type || null,
+      size_bytes: file.size,
+      tags: [machineType, model, category],
+      file_url: fileUrl,
+    });
+
+    if (insertError) {
+      await supabase.storage.from(uploadBucket).remove([storagePath]);
+      setUploadErrorMessage(insertError.message || "File record could not be saved.");
+      setIsUploading(false);
+      return;
+    }
+
+    setUploadMessage("File uploaded.");
+    setActiveMachine(allMachinesLabel);
+    setActiveCategory(allCategoriesLabel);
+    setActiveFolderId(allFolderId);
+    setRefreshKey((value) => value + 1);
+    setIsUploading(false);
+  }
+
   return (
     <section className="space-y-6">
       <div className="space-y-3">
@@ -318,6 +419,84 @@ export function FileExplorer() {
       </div>
 
       {errorMessage ? <p className="text-sm font-medium text-red-700">{errorMessage}</p> : null}
+
+      <form
+        action={uploadFile}
+        className="space-y-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+      >
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-slate-950">Upload technician file</h2>
+            <p className="mt-1 text-sm text-slate-600">Add a file with machine metadata.</p>
+          </div>
+          {uploadMessage ? <p className="text-sm font-medium text-emerald-700">{uploadMessage}</p> : null}
+        </div>
+
+        {uploadErrorMessage ? (
+          <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+            {uploadErrorMessage}
+          </p>
+        ) : null}
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span>Machine type</span>
+            <input
+              name="machine_type"
+              required
+              placeholder="ATM"
+              className="min-h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-slate-950"
+            />
+          </label>
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span>Model</span>
+            <input
+              name="model"
+              required
+              placeholder="NCR 6634"
+              className="min-h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-slate-950"
+            />
+          </label>
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span>Category</span>
+            <input
+              name="category"
+              required
+              placeholder="Manuals"
+              className="min-h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-slate-950"
+            />
+          </label>
+        </div>
+
+        <label className="space-y-1 text-sm font-medium text-slate-700">
+          <span>Description</span>
+          <textarea
+            name="description"
+            rows={3}
+            placeholder="Optional field notes"
+            className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-950"
+          />
+        </label>
+
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+          <label className="space-y-1 text-sm font-medium text-slate-700">
+            <span>File</span>
+            <input
+              name="file"
+              type="file"
+              required
+              className="min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-slate-700"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={isUploading}
+            className="min-h-11 rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {isUploading ? "Uploading..." : "Upload file"}
+          </button>
+        </div>
+      </form>
 
       <div className="space-y-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
         <div className="space-y-2">

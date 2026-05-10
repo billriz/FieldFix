@@ -5,6 +5,7 @@ export type FileCardData = {
   name: string;
   description: string;
   machineType: string;
+  model?: string;
   category: string;
   fileType: string;
   size: string;
@@ -28,6 +29,11 @@ export function FileCard({ file }: FileCardProps) {
             <span className="rounded bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
               {file.machineType}
             </span>
+            {file.model ? (
+              <span className="rounded bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">
+                {file.model}
+              </span>
+            ) : null}
             <span className="rounded bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-900">
               {file.category}
             </span>

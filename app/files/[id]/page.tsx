@@ -26,9 +26,11 @@ type FileDetailRow = {
   bucket: string;
   path: string;
   filename: string;
+  file_url: string | null;
   name: string | null;
   description: string | null;
   machine_type: string | null;
+  model: string | null;
   category: string | null;
   content_type: string | null;
   size_bytes: number | null;
@@ -152,9 +154,11 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
         bucket,
         path,
         filename,
+        file_url,
         name,
         description,
         machine_type,
+        model,
         category,
         content_type,
         size_bytes,
@@ -187,7 +191,7 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
   const linkedFixes = (file.fix_files ?? [])
     .map((row) => toFixCard(row))
     .filter((fix): fix is FixCardData => Boolean(fix));
-  const previewUrl = supabase.storage.from(file.bucket).getPublicUrl(file.path).data.publicUrl;
+  const previewUrl = file.file_url ?? supabase.storage.from(file.bucket).getPublicUrl(file.path).data.publicUrl;
 
   return (
     <article className="space-y-6">
@@ -212,8 +216,9 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
 
       <section className="space-y-3">
         <h2 className="text-base font-semibold text-slate-950">Metadata</h2>
-        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <DetailField label="Machine type" value={file.machine_type ?? "Unspecified"} />
+          <DetailField label="Model" value={file.model ?? "Unspecified"} />
           <DetailField label="Category" value={file.category ?? "Uncategorized"} />
           <DetailField label="File type" value={file.content_type ?? "Unknown"} />
           <DetailField label="Size" value={formatSize(file.size_bytes)} />
