@@ -31,7 +31,7 @@ function FieldLabel({ htmlFor, children }: { htmlFor: string; children: React.Re
 }
 
 const inputClassName =
-  "min-h-11 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none transition focus:border-slate-950 focus:ring-2 focus:ring-slate-200";
+  "min-h-11 rounded-md border border-slate-300 bg-white px-3 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-950 focus:ring-2 focus:ring-slate-200 sm:text-sm";
 
 export function SubmitFixForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -83,8 +83,8 @@ export function SubmitFixForm() {
   }
 
   return (
-    <form onSubmit={submitFix} className="space-y-6">
-      <div className="grid gap-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2">
+    <form onSubmit={submitFix} className="space-y-5">
+      <div className="grid gap-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 sm:p-5">
         <div className="flex flex-col gap-2">
           <FieldLabel htmlFor="machine_type">Machine type</FieldLabel>
           <select id="machine_type" name="machine_type" required className={inputClassName}>
@@ -124,6 +124,7 @@ export function SubmitFixForm() {
             name="symptoms"
             required
             rows={4}
+            placeholder="What did the technician observe?"
             className={`${inputClassName} py-3 leading-6`}
           />
         </div>
@@ -135,6 +136,7 @@ export function SubmitFixForm() {
             name="fix_steps"
             required
             rows={6}
+            placeholder="One step per line"
             className={`${inputClassName} py-3 leading-6`}
           />
         </div>
@@ -145,6 +147,7 @@ export function SubmitFixForm() {
             id="parts_used"
             name="parts_used"
             rows={3}
+            placeholder="One part per line"
             className={`${inputClassName} py-3 leading-6`}
           />
         </div>
@@ -167,7 +170,7 @@ export function SubmitFixForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="min-h-11 rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          className="min-h-11 w-full rounded-md bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400 sm:w-auto"
         >
           {isSubmitting ? "Submitting..." : "Submit fix"}
         </button>

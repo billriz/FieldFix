@@ -14,8 +14,8 @@ export function SearchBar({
       <label htmlFor="fix-search" className="sr-only">
         Search fixes
       </label>
-      <div className="flex min-h-14 items-center rounded-md border border-slate-300 bg-white px-4 shadow-sm focus-within:border-slate-500 focus-within:ring-4 focus-within:ring-slate-200">
-        <span aria-hidden="true" className="mr-3 text-lg text-slate-500">
+      <div className="flex min-h-13 items-center rounded-md border border-slate-300 bg-white px-3 shadow-sm transition focus-within:border-slate-500 focus-within:ring-4 focus-within:ring-slate-200 sm:min-h-14 sm:px-4">
+        <span aria-hidden="true" className="mr-2 text-lg text-slate-500 sm:mr-3">
           &#8981;
         </span>
         <input

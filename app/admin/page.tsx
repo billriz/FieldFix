@@ -47,9 +47,13 @@ export default async function AdminPage() {
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-950">Admin</h1>
-          <p className="mt-1 text-sm text-slate-600">Review submitted fixes before publishing.</p>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold leading-tight text-slate-950 sm:text-3xl">
+            Admin
+          </h1>
+          <p className="text-sm leading-6 text-slate-600">
+            Review submitted fixes before publishing.
+          </p>
         </div>
         <p className="text-sm font-medium text-slate-500">{pendingFixes.length} pending</p>
       </div>
@@ -74,7 +78,7 @@ export default async function AdminPage() {
           return (
             <article
               key={fix.id}
-              className="rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+              className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0 space-y-3">
@@ -100,8 +104,8 @@ export default async function AdminPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <h2 className="text-lg font-semibold text-slate-950">{fix.title}</h2>
-                    <p className="text-sm leading-6 text-slate-600">
+                    <h2 className="text-lg font-semibold leading-6 text-slate-950">{fix.title}</h2>
+                    <p className="line-clamp-4 text-sm leading-6 text-slate-600">
                       {fix.symptoms ?? "No symptoms provided."}
                     </p>
                   </div>
@@ -133,8 +137,10 @@ export default async function AdminPage() {
                   ) : null}
                 </div>
 
-                <div className="flex shrink-0 flex-col gap-3 lg:w-40">
-                  <p className="text-sm text-slate-500 lg:text-right">{formatDate(fix.created_at)}</p>
+                <div className="grid shrink-0 grid-cols-2 gap-3 lg:w-40 lg:grid-cols-1">
+                  <p className="col-span-2 text-sm text-slate-500 lg:col-span-1 lg:text-right">
+                    {formatDate(fix.created_at)}
+                  </p>
                   <form action={approveFix}>
                     <input type="hidden" name="fix_id" value={fix.id} />
                     <button

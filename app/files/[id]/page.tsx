@@ -203,7 +203,7 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             File detail
           </p>
-          <h1 className="max-w-3xl text-3xl font-semibold leading-tight text-slate-950">
+          <h1 className="max-w-3xl text-2xl font-semibold leading-tight text-slate-950 sm:text-3xl">
             {displayName}
           </h1>
           <p className="max-w-3xl text-sm leading-6 text-slate-600">
@@ -224,7 +224,7 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
           <DetailField label="Size" value={formatSize(file.size_bytes)} />
         </dl>
 
-        <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <dl className="grid gap-4 sm:grid-cols-2">
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">

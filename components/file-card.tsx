@@ -21,7 +21,7 @@ export function FileCard({ file }: FileCardProps) {
   return (
     <Link
       href={`/files/${file.id}`}
-      className="block rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow"
+      className="block rounded-md border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow sm:p-5"
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-3">
@@ -43,8 +43,8 @@ export function FileCard({ file }: FileCardProps) {
           </div>
 
           <div className="space-y-1">
-            <h2 className="truncate text-lg font-semibold text-slate-950">{file.name}</h2>
-            <p className="text-sm leading-6 text-slate-600">{file.description}</p>
+            <h2 className="truncate text-lg font-semibold leading-6 text-slate-950">{file.name}</h2>
+            <p className="line-clamp-3 text-sm leading-6 text-slate-600">{file.description}</p>
           </div>
 
           {file.tags && file.tags.length > 0 ? (

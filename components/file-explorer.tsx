@@ -173,6 +173,32 @@ function Chip({
   );
 }
 
+function FileListSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex animate-pulse flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="flex gap-2">
+                <div className="h-6 w-16 rounded bg-slate-200" />
+                <div className="h-6 w-20 rounded bg-slate-200" />
+                <div className="h-6 w-12 rounded bg-slate-200" />
+              </div>
+              <div className="h-5 w-4/5 rounded bg-slate-200" />
+              <div className="space-y-2">
+                <div className="h-3 w-full rounded bg-slate-100" />
+                <div className="h-3 w-2/3 rounded bg-slate-100" />
+              </div>
+            </div>
+            <div className="h-4 w-20 rounded bg-slate-100" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function FileExplorer() {
   const [query, setQuery] = useState("");
   const [activeMachine, setActiveMachine] = useState(allMachinesLabel);
@@ -402,9 +428,11 @@ export function FileExplorer() {
     <section className="space-y-6">
       <div className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-950">File Explorer</h1>
-            <p className="mt-1 text-sm text-slate-600">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold leading-tight text-slate-950 sm:text-3xl">
+              File Explorer
+            </h1>
+            <p className="text-sm leading-6 text-slate-600">
               Browse field files by folder, machine type, category, or keyword.
             </p>
           </div>
@@ -422,7 +450,7 @@ export function FileExplorer() {
 
       <form
         action={uploadFile}
-        className="space-y-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+        className="space-y-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
       >
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -498,7 +526,7 @@ export function FileExplorer() {
         </div>
       </form>
 
-      <div className="space-y-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="space-y-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
             Machine type
@@ -530,13 +558,13 @@ export function FileExplorer() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[280px_1fr] lg:gap-6">
         <aside className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-slate-950">Folders</h2>
             <span className="text-sm text-slate-500">{folders.length}</span>
           </div>
-          <div className="space-y-2">
+          <div className="grid gap-2 sm:grid-cols-2 lg:block lg:space-y-2">
             {folders.map((folder) => (
               <FolderRow
                 key={folder.id}
@@ -559,9 +587,7 @@ export function FileExplorer() {
           </div>
 
           {isLoading ? (
-            <div className="rounded-md border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
-              Loading files...
-            </div>
+            <FileListSkeleton />
           ) : visibleFiles.length > 0 ? (
             <div className="space-y-3">
               {visibleFiles.map((file) => (

@@ -90,7 +90,7 @@ export function FixFeedback({
   const isDisabled = Boolean(submittedChoice) || isSubmitting;
 
   return (
-    <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-slate-950">Did this fix work?</h2>
@@ -98,22 +98,22 @@ export function FixFeedback({
             Yes: {successCount} · No: {failureCount}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <button
             type="button"
             disabled={isDisabled}
             onClick={() => submitFeedback("yes")}
-            className="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="min-h-10 rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            YES
+            Yes
           </button>
           <button
             type="button"
             disabled={isDisabled}
             onClick={() => submitFeedback("no")}
-            className="rounded bg-red-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="min-h-10 rounded bg-red-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            NO
+            No
           </button>
         </div>
       </div>

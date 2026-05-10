@@ -49,6 +49,27 @@ type SearchResultsProps = {
   filters?: ReactNode;
 };
 
+function ResultSkeleton() {
+  return (
+    <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex animate-pulse flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex gap-2">
+            <div className="h-6 w-20 rounded bg-slate-200" />
+            <div className="h-6 w-14 rounded bg-slate-200" />
+          </div>
+          <div className="h-5 w-3/4 rounded bg-slate-200" />
+          <div className="space-y-2">
+            <div className="h-3 w-full rounded bg-slate-100" />
+            <div className="h-3 w-2/3 rounded bg-slate-100" />
+          </div>
+        </div>
+        <div className="h-4 w-24 rounded bg-slate-100" />
+      </div>
+    </div>
+  );
+}
+
 export function SearchResults({ filters }: SearchResultsProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<FixCardData[]>([]);
@@ -103,7 +124,14 @@ export function SearchResults({ filters }: SearchResultsProps) {
   return (
     <>
       <div className="space-y-3">
-        <h1 className="text-2xl font-semibold text-slate-950">Search fixes</h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold leading-tight text-slate-950 sm:text-3xl">
+            Search fixes
+          </h1>
+          <p className="text-sm leading-6 text-slate-600">
+            Find approved field fixes by equipment, model, or error code.
+          </p>
+        </div>
         <SearchBar value={query} onChange={setQuery} />
       </div>
 
@@ -112,12 +140,16 @@ export function SearchResults({ filters }: SearchResultsProps) {
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-base font-semibold text-slate-950">Results</h2>
-          <p className="text-sm text-slate-500">
+          <p className="shrink-0 text-sm text-slate-500">
             {isLoading ? "Searching" : `${results.length} fixes`}
           </p>
         </div>
 
-        {errorMessage ? <p className="text-sm text-red-700">{errorMessage}</p> : null}
+        {errorMessage ? (
+          <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+            {errorMessage}
+          </p>
+        ) : null}
 
         {!searchTerm && !errorMessage ? (
           <p className="rounded-md border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
@@ -131,11 +163,19 @@ export function SearchResults({ filters }: SearchResultsProps) {
           </p>
         ) : null}
 
-        <div className="space-y-3">
-          {results.map((fix) => (
-            <FixCard key={fix.id} fix={fix} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="space-y-3">
+            <ResultSkeleton />
+            <ResultSkeleton />
+            <ResultSkeleton />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {results.map((fix) => (
+              <FixCard key={fix.id} fix={fix} />
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

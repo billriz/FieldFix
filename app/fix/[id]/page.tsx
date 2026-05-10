@@ -194,7 +194,7 @@ export default async function FixDetailPage({ params }: FixDetailPageProps) {
         </Link>
         <div className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Fix detail</p>
-          <h1 className="max-w-3xl text-3xl font-semibold leading-tight text-slate-950">
+          <h1 className="max-w-3xl text-2xl font-semibold leading-tight text-slate-950 sm:text-3xl">
             {fix.title}
           </h1>
         </div>
@@ -206,14 +206,14 @@ export default async function FixDetailPage({ params }: FixDetailPageProps) {
         <DetailField label="Model" value={fix.model ?? "Unspecified"} />
       </dl>
 
-      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <h2 className="text-base font-semibold text-slate-950">Symptoms</h2>
         <p className="mt-3 text-sm leading-6 text-slate-700">
           {fix.symptoms ?? fix.description ?? "No symptoms documented."}
         </p>
       </section>
 
-      <section className="rounded-md border border-slate-300 bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-md border border-slate-300 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold text-slate-950">Fix steps</h2>
           <span className="rounded bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
@@ -224,11 +224,13 @@ export default async function FixDetailPage({ params }: FixDetailPageProps) {
         {readableSteps.length > 0 ? (
           <ol className="mt-5 space-y-4">
             {readableSteps.map((step, index) => (
-              <li key={`${step}-${index}`} className="flex gap-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-slate-950 text-sm font-semibold text-white">
+              <li key={`${step}-${index}`} className="flex gap-3 sm:gap-4">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-slate-950 text-sm font-semibold text-white sm:h-9 sm:w-9">
                   {index + 1}
                 </span>
-                <p className="pt-1.5 text-base leading-7 text-slate-800">{step}</p>
+                <p className="pt-1 text-sm leading-6 text-slate-800 sm:pt-1.5 sm:text-base sm:leading-7">
+                  {step}
+                </p>
               </li>
             ))}
           </ol>
@@ -237,7 +239,7 @@ export default async function FixDetailPage({ params }: FixDetailPageProps) {
         )}
       </section>
 
-      <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-md border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <h2 className="text-base font-semibold text-slate-950">Parts used</h2>
         {parts.length > 0 ? (
           <ul className="mt-3 flex flex-wrap gap-2">
